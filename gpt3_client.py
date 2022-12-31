@@ -4,16 +4,11 @@ from negotiators import Negotiator
 
 class NegotiationDeal():
     def __init__(self, aff: Negotiator, neg: Negotiator, prompt: str:
-        self.personality = personaHandler.personality
-        self.name = personaHandler.name
-        self.context = context
-        self.prompt = prompt
-        if self.context is None or self.prompt is None:
-            raise ValueError("missing context and/or prompt")
-        self.author: User = kwargs.get("author", None)
-        self.reactor: User = kwargs.get("reactor", None)
-        self.mentions = kwargs.get("mentions", None)
+       raise NotImplementedError
         
+
+class Message():
+    """Server must be running on """
     async def bot_response(self):
         """Create and respond to the prompt with a message to the channel"""
         async with self.context.typing():

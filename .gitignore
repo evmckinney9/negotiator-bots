@@ -1,6 +1,7 @@
 # contains openai API key in "openai_api_key"
 config.json
 play-chatgpt/
+start.sh
 
 
 # Byte-compiled / optimized / DLL files
