@@ -1,0 +1,1 @@
+OPENAI_EMAIL="zwooz19@gmail.com" OPENAI_PASSWORD="YP.8Sm/@n*TSg3S" CHROME_PATH = "/usr/bin/google-chrome" node index.mjs
