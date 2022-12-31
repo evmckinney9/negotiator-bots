@@ -3,7 +3,7 @@ This tool allows you to test negotiation strategies using language models. You c
 
 Using https://github.com/mefengl/play-chatgpt to access ChatGPT,
 1. Modify `index.mjs` to point to browser executable
-```shell
+```javascript
 const api = new ChatGPTAPIBrowser({ email: process.env.OPENAI_EMAIL, password: process.env.OPENAI_PASSWORD, path: process.env.CHROME_PATH })
 ```
 2. Run this in the background to start server, (may need to assist the webpage for signing in)
