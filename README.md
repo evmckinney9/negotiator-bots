@@ -10,7 +10,7 @@ Using https://github.com/mefengl/play-chatgpt to access ChatGPT,
 ```javascript
 const api = new ChatGPTAPIBrowser({ email: process.env.OPENAI_EMAIL, password: process.env.OPENAI_PASSWORD, path: process.env.CHROME_PATH })
 ```
-2. Run this in the background to start server, (may need to assist the webpage for signing in)
+2. Run this (`start.sh`) in the background to start server, (may need to assist the webpage for signing in)
 ```shell
 OPENAI_EMAIL="<>" OPENAI_PASSWORD="<>" CHROME_PATH = "/usr/bin/google-chrome" node index.mjs
 ```
