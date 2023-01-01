@@ -1,100 +1,70 @@
-import openai
-import json
-from negotiators import Negotiator
+from negotiators import Negotiator, BasicAff, BasicNeg, ConversationData
+import requests
 
-class NegotiationDeal():
-    def __init__(self, aff: Negotiator, neg: Negotiator, prompt: str:
-       raise NotImplementedError
-        
+class Conversation():
+    """Server running at localhost:8661
+    Usage Example:
+    # then try it with
+    curl "http://localhost:8661/?q=hello"
+    # >> {answer: "xxx", sameConversationUrlComponent: "&conversationId=123&parentMessageId=456"}
+    # then try it with
+    curl "http://localhost:8661/?q=hello&conversationId=123&parentMessageId=456"
+    """
+    def __init__(self, aff: Negotiator, neg: Negotiator):
+        self.aff = aff
+        self.neg = neg
+        self.init_bots()
 
-class Message():
-    """Server must be running on """
-    async def bot_response(self):
-        """Create and respond to the prompt with a message to the channel"""
-        async with self.context.typing():
-            prompt = self.prompt_cleaner(self.prompt)
-            print(prompt)
-            ret = self.chatgpt3(prompt)
-            response_text = self.response_cleaner(ret)
-            await self.context.send(response_text)
+    async def init_bots(self):
+        # need to start 2 conversations, one for each negotiator
+        self.aff.setConversationData(self.bot_response(self.aff.constructor_prompt()))
+        self.neg.setConversationData(self.bot_response(self.neg.constructor_prompt()))
 
-    def prompt_cleaner(self, prompt: str) -> str:
-        #personality
-        prompt += f"Write the text message response using personality of: {self.personality}\n"
+    async def conversation_turn(self):
+        """1 back and forth rotation between the 2 bots"""
+        # send aff's message to the neg bot
+        self.neg.setConversationData(self.bot_response(self.aff.getLastResponse(), self.neg.getLastResponse()))
+    
+    async def bot_response(self, conversationData: ConversationData):
+        return self.atomic_message(conversationData.getLastResponse(), conversationData.conversationId, conversationData.parentMessageId)
 
-        # small chance they knows their own name
-        if random.random() > 0.1:
-            prompt = prompt.replace(f"named {self.name} ", "")
-        
-        # only chance to mention current location
-        if random.random() > 0.15:
-            # prompt = prompt.replace(f"at a {self.personality.location} ", "")
-            # use regular expression to remove location, multi-word until next new line
-            prompt = re.sub(r"at a [a-zA-Z ]+\n", ".\n", prompt)
-        
-        if self.author is not None:
-            prompt += f"Remember that {self.author.display_name} wrote this message and mention them.\n"
-        if self.reactor is not None and self.reactor != self.author:
-            prompt += f"Remember that {self.reactor.display_name} reacted to the message and mention them.\n"
+    async def atomic_message(self, message: str, conversationId: str, parentMessageId: str):
+        """Return a response to the user's message."""
 
-        # parsed for tagged user in the original message part of the prompt
-        if self.mentions is not None:
-            for user in self.mentions:
-                prompt = prompt.replace(f"<@{user.id}>", user.display_name)
-        
-        return prompt
+        if conversationId is None and parentMessageId is None:
+            payload = {"q": message}
+        else:
+            payload = {"q": message, "conversationId": conversationId, "parentMessageId": parentMessageId}
+       
+        ret = requests.get("http://localhost:8661/", params=payload).json()
 
-    def response_cleaner(self, message: str) -> str:
-        """Cleans the response from GPT-3"""
-        # remove newline chars
-        message = message.replace("\n", "")
-        message = message.replace("  ", " ")
+        # clean response, jank formatting
+        assert ret['conversationId'].split('&')[1].split('=')[1] == conversationId
+        parentMessageId = ret['conversationId'].split('&')[2].split('=')[1]
 
-        # don't start or end with qoutes
-        if message[0] == '"':
-            message = message[1:]
-        if message[-1] == '"':
-            message = message[:-1]
+        return ret['answer'], conversationId, parentMessageId
 
-        #sub tags in response if author or reactors kwargs
-        # clean response_text, want to replace names with discord mentions
-        # remove @
-        message = message.replace("@", "")
-        if self.author is not None:
-            # response_text = response_text.replace(author.display_name, author.mention)
-            # replace all instances, case insensitive
-            message = re.sub(self.author.display_name, self.author.mention, message, flags=re.IGNORECASE)
-        if self.reactor is not None:
-            # response_text = response_text.replace(reactor.display_name, reactor.mention)
-            message = re.sub(self.reactor.display_name, self.reactor.mention, message, flags=re.IGNORECASE)
 
-        return message
+if __name__ == "__main__":
+    aff = BasicAff()
+    neg = BasicNeg()
+    conv = Conversation(aff, neg)
+    
 
-    def chatgpt3(self, prompt: str) -> str:
-        """Returns a response from GPT-3"""
+# if __name__ == "__main__":
+#     # Hello World to test the server
+#     prompt = "What is the smallest animal in the world?"
+#     payload = {"q": prompt}
+#     ret = requests.get("http://localhost:8661/", params=payload).json()
+#     print(ret,"\n")
+#     text_response = ret['answer']
 
-        # get api key from config.json
-        with open("config.json") as file:
-            data = json.load(file)
-            openai.api_key = data["openai_api_key"]
+#     # for some reason need to do some text cleaning
+#     ret_data = ret['sameConversationUrlComponent']
+#     conversationid = ret_data.split('&')[1].split('=')[1]
+#     parentmessageid = ret_data.split('&')[2].split('=')[1]
 
-        # make a prompt
-        kwargs= {
-            "model": "text-davinci-003",
-            "prompt": prompt,
-            "max_tokens": 140,
-            "temperature": 1,
-            "top_p": 1,
-            "n": 1,
-            "stream": False,
-            "logprobs": None,
-            "presence_penalty": .5,
-            "frequency_penalty": .5,
-        }
-
-        # generate a response
-        print("Generating response...")
-        response = openai.Completion.create(**kwargs)
-        print(response)
-        ret = response["choices"][0]["text"]
-        return ret
+#     # follow up question
+#     payload = {"q": "where does it live?", "conversationId": conversationid, "parentMessageId": parentmessageid}
+#     ret = requests.get("http://localhost:8661/", params=payload).json()
+#     print(ret)
