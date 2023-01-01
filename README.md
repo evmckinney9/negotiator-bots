@@ -1,5 +1,9 @@
 # negotiator-bots
+
 This tool allows you to test negotiation strategies using language models. You can pit buying and selling bots against each other and evaluate the effectiveness of different prompts. This tool is for internal use only and is not intended for public release.
+___
+A potential application of advanced language models is to use for negotiating contracts on your behalf automatically[^1]. Why not have a robot friend working for you in the background trying to save you money? That makes me wonder how we can test the effectiviness of different ChatGPT prompts for maximizing your discounts. Just for fun, I want to create a tournament of bots who are making deals, 1) just to see what happens 2) understand what works or what doesn't. We will test the strategy against only bots, so of course if a real human was on the otherside of the phone, it is possilbe things would go much differently.
+___
 
 Using https://github.com/mefengl/play-chatgpt to access ChatGPT,
 1. Modify `index.mjs` to point to browser executable
@@ -10,3 +14,5 @@ const api = new ChatGPTAPIBrowser({ email: process.env.OPENAI_EMAIL, password: p
 ```shell
 OPENAI_EMAIL="<>" OPENAI_PASSWORD="<>" CHROME_PATH = "/usr/bin/google-chrome" node index.mjs
 ```
+
+[^1]: https://futurism.com/the-byte/ai-chatbot-lawyer-customer-service
