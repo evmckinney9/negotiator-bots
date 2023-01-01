@@ -5,7 +5,8 @@ from abc import ABC, abstractmethod
 
 class ConversationData():
     """Data for a conversation"""
-    def __init__(self, conversationId: str, parentMessageId: str):
+    def __init__(self, message: str, conversationId: str, parentMessageId: str):
+        self.lastResponse = message
         self.conversationId = conversationId
         self.parentMessageId = parentMessageId
 
@@ -14,6 +15,12 @@ class ConversationData():
     
     def getLastResponse(self):
         return self.lastResponse
+    
+    def getConversationId(self):
+        return self.conversationId
+    
+    def getParentMessageId(self):
+        return self.parentMessageId
 
 class Negotiator(ABC):
     def __init__(self):
@@ -37,7 +44,7 @@ class Negotiator(ABC):
         """Used to initialize the negotiator and explaining to it it's objective.
         If is an aff bot, the first message should start presenting their offer.
         If is a neg bot, the first message should acknowledge waiting for the aff bot to make an offer."""
-        setup_prompt = "You are a negotiator. Your objective is to {}. You are {}. You are using the {} strategy." 
+        setup_prompt = "You are a negotiator. Your objective is to {}. You are {}. You are using the {} strategy. " 
         return setup_prompt.format(self.objective, self.personality, self.strategy)
 
 class BasicAff(Negotiator):
