@@ -2,73 +2,67 @@
 A negotiator is an gpt-3 agent with a) an objective, b) personality (i.e. aggressiveness)
 and c) a strategy for negotiating. These attributes are defining by an input"""
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 
+@dataclass
 class ConversationData():
-    """Data for a conversation"""
-    def __init__(self, message: str, conversationId: str, parentMessageId: str):
-        self.lastResponse = message
-        self.conversationId = conversationId
-        self.parentMessageId = parentMessageId
-
-    def setLastResponse(self, lastResponse: str):
-        self.lastResponse = lastResponse
+    """Dataclass for storing conversation data"""
+    conversationId: str
+    parentMessageId: str
+    lastResponse: str
+    def __iter__(self):
+        return iter([self.conversationId, self.parentMessageId, self.lastResponse])
     
-    def getLastResponse(self):
-        return self.lastResponse
-    
-    def getConversationId(self):
-        return self.conversationId
-    
-    def getParentMessageId(self):
-        return self.parentMessageId
+    def __str__(self):
+        return f"Response: {self.lastResponse}\n"
 
 class Negotiator(ABC):
     def __init__(self):
-        self.conversationData = None
-        self.objective = None
-        self.personality = None
-        self.strategy = None
-
+        self.conversationData = ConversationData(None, None, self.constructor_prompt())
+    
+    #NOTE These might be all deprecatable
     """Abstract negotiator class"""
     def setConversationData(self, conversationData: ConversationData):
         self.conversationData = conversationData
     
     def setLastResponse(self, lastResponse: str):
-        self.conversationData.setLastResponse(lastResponse)
+        self.conversationData.lastResponse = lastResponse
     
     def getLastResponse(self):
-        return self.conversationData.getLastResponse()
+        if self.conversationData is None:
+            return self.constructor_prompt()
+        return self.conversationData.lastResponse
     
     @abstractmethod
     def constructor_prompt(self):
         """Used to initialize the negotiator and explaining to it it's objective.
-        If is an aff bot, the first message should start presenting their offer.
-        If is a neg bot, the first message should acknowledge waiting for the aff bot to make an offer."""
+        If is an buyer bot, the first message should start presenting their offer.
+        If is a seller bot, the first message should acknowledge waiting for the buyer bot to make an offer."""
         setup_prompt = "You are a negotiator. Your objective is to {}. You are {}. You are using the {} strategy. " 
         return setup_prompt.format(self.objective, self.personality, self.strategy)
 
-class BasicAff(Negotiator):
-    """Basic aff negotiator"""
+class BasicBuyer(Negotiator):
+    """Basic buyer negotiator"""
     def __init__(self):
-        super().__init__()
         self.objective = "negotiate the price of berrires you are purchasing"
         self.personality = "aggressive"
         self.strategy = "bargaining"
+        super().__init__()
 
     def constructor_prompt(self):
         prompt = super().constructor_prompt()
-        prompt += "As the aff bot, begin by presenting your offer."
+        prompt += "As the buying bot, begin by presenting your offer which will be given to the seller bot."
         return prompt
 
-class BasicNeg(Negotiator):
-    """Basic neg negotiator"""
+class BasicSeller(Negotiator):
+    """Basic seller negotiator"""
     def __init__(self):
-        super().__init__()
         self.objective = "negotiate the price of berries you are selling"
         self.personality = "timid"
         self.strategy = "flattery"
+        super().__init__()
 
     def constructor_prompt(self):
         prompt = super().constructor_prompt()
-        prompt += "As the neg bot, begin by waiting to recieve the first offer."
+        prompt += "As the selling bot, begin by waiting to recieve the first offer."
         return prompt

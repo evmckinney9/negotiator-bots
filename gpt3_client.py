@@ -1,5 +1,4 @@
-from negotiators import Negotiator, BasicAff, BasicNeg, ConversationData
-import requests
+from negotiators import Negotiator, BasicBuyer, BasicSeller, ConversationData
 import asyncio
 import aiohttp
 
@@ -12,52 +11,43 @@ class Conversation():
     # then try it with
     curl "http://localhost:8661/?q=hello&conversationId=123&parentMessageId=456"
     """
-    def __init__(self, aff: Negotiator, neg: Negotiator):
-        self.aff = aff
-        self.neg = neg
+    def __init__(self, buyer: Negotiator, seller: Negotiator):
+        self.buyer = buyer
+        self.seller = seller
         self.initiated = False
 
     async def init_bots(self):
         # need to start 2 conversations, one for each negotiator
-        data = await self._construction_response(self.aff.constructor_prompt())
-        print(data)
-        self.aff.setConversationData(data)
-        data = await self._construction_response(self.neg.constructor_prompt())
-        print(data)
-        self.neg.setConversationData(data)  
+        assert not self.initiated, "Bots already initiated"
+        # here, bot.conversationData is None, so will return constructor_prompt in place of lastResponse
+        await self._bot_response(self.buyer)
+        await self._bot_response(self.seller)
         self.initiated = True
 
     async def conversation_turn(self):
         """1 back and forth rotation between the 2 bots"""
         assert self.initiated, "Bots not initiated"
 
-        # send aff's message to the neg bot
+        # send buyer's message to the seller bot
         #pass responses by using the conversationData set last response
-        self.neg.setLastResponse(self.aff.getLastResponse())
+        self.seller.setLastResponse(self.buyer.getLastResponse())
 
-        # get neg's response, and save new conversationData
-        data = await self._bot_response(self.neg.conversationData)
-        print(data)
-        self.neg.setConversationData(data)
+        # get seller's response, and save new conversationData
+        await self._bot_response(self.seller)
+      
+        # send seller's response to the buyer bot
+        self.buyer.setLastResponse(self.seller.getLastResponse())
 
-        # send neg's response to the aff bot
-        self.aff.setLastResponse(data.getLastResponse())
+        # get buyer's response, and save new conversationData
+        await self._bot_response(self.buyer)
 
-        # get aff's response, and save new conversationData
-        data = await self._bot_response(self.aff.conversationData)
-        print(data)
-        self.aff.setConversationData(data)
+    async def _bot_response(self, bot: Negotiator) -> None:
+        data = await self._atomic_message(*bot.conversationData)
+        # update the conversationData in the bot
+        bot.setConversationData(data)
 
-    async def _construction_response(self, message: str) -> ConversationData:
-        """Conversation construction, need this function before ConversationData has been initialized"""
-        return self._atomic_message(message, None, None)
-
-    async def _bot_response(self, conversationData: ConversationData) -> ConversationData:
-        return self._atomic_message(conversationData.getLastResponse(), conversationData.getConversationId(), conversationData.getParentMessageId())
-
-    async def _atomic_message(self, message: str, conversationId: str, parentMessageId: str) -> ConversationData:
+    async def _atomic_message(self, conversationId: str, parentMessageId: str, message: str) -> ConversationData:
         """Return a response to the user's message."""
-
         if conversationId is None and parentMessageId is None:
             payload = {"q": message}
         else:
@@ -66,19 +56,24 @@ class Conversation():
         # ret = requests.get("http://localhost:8661/", params=payload).json()
         async with aiohttp.ClientSession() as session:
             async with session.get("http://localhost:8661/", params=payload) as resp:
-                ret = await resp.json()
+                if resp.status == 200:
+                    ret = await resp.json()
+                else:
+                    print(f"Request failed with status code {resp.status}")
 
         # clean response, jank formatting
-        assert ret['conversationId'].split('&')[1].split('=')[1] == conversationId
-        parentMessageId = ret['conversationId'].split('&')[2].split('=')[1]
+        assert conversationId is None or ret['sameConversationUrlComponent'].split('&')[1].split('=')[1] == conversationId
+        parentMessageId = ret['sameConversationUrlComponent'].split('&')[2].split('=')[1]
 
-        return ConversationData(ret['answer'], conversationId, parentMessageId)
+        ret = ConversationData(conversationId, parentMessageId, ret['answer'])
+        print(ret)
+        return ret 
 
 
 async def main():
-    aff = BasicAff()
-    neg = BasicNeg()
-    conv = Conversation(aff, neg)
+    buyer = BasicBuyer()
+    seller = BasicSeller()
+    conv = Conversation(buyer, seller)
     await conv.init_bots()
     await conv.conversation_turn()
     
