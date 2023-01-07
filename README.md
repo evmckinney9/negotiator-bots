@@ -2,7 +2,7 @@
 
 This tool allows you to test negotiation strategies using language models. You can pit buying and selling bots against each other and evaluate the effectiveness of different prompts.
 
-**This framework can be used to connect 2 ChatGPT instances directly to each other.**  Without a publically released API yet, we use a web server to mock inputs, alternating sharing responses between 2 open conversations using asynchronous python queries. 
+**This framework can be used to connect 2 ChatGPT instances directly to each other.**  Without yet a publically released API, we use a web server to mock inputs, alternating sharing responses between 2 open conversations using asynchronous python queries. 
 
 ___
 A potential application of advanced language models is to use for negotiating contracts on your behalf automatically[^1] [^2]. Why not have a robot friend working for you in the background trying to save you money? That makes me wonder how we can test the effectiviness of different ChatGPT prompts for maximizing your discounts. Just for fun, I want to create a tournament of bots who are making deals, 1) just to see what happens 2) understand what works or what doesn't. We will test the strategy against only bots, so of course if a real human was on the otherside of the phone, it is possilbe things would go much differently.
